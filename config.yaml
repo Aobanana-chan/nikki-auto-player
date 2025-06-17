@@ -25,4 +25,11 @@ user_config:
   - so#: t
   - la#: y
   - ti#: u
+  - do/: z
+  - re/: x
+  - mi/: c
+  - fa/: v
+  - so/: b
+  - la/: n
+  - ti/: m
   - sharp: shift
