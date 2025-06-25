@@ -1,4 +1,5 @@
 import asyncio
+from encodings.punycode import T
 import win32api
 import win32con
 
@@ -25,9 +26,12 @@ async def hold_key(key: str, duration: float) -> None:
     """
     vk_code = ord(key.upper())
     scan_code = win32api.MapVirtualKey(vk_code, 0)
-    if is_key_pressed(vk_code):
-        win32api.keybd_event(vk_code, scan_code, win32con.KEYEVENTF_KEYUP, 0)
-        await asyncio.sleep(PRESS_GAP)  # 短暂延迟
+    need_wait = False
+    while is_key_pressed(vk_code):  # 等key占用结束
+        need_wait = True
+        await asyncio.sleep(0)
+    if need_wait:
+        await asyncio.sleep(PRESS_GAP)
     win32api.keybd_event(vk_code, scan_code, 0, 0)
     await asyncio.sleep(max(duration, PRESS_GAP))  # 保证演奏的连贯性
     # 释放按键
@@ -43,9 +47,12 @@ async def press_key(key: str) -> None:
     """
     vk_code = ord(key.upper())
     scan_code = win32api.MapVirtualKey(vk_code, 0)
-    if is_key_pressed(vk_code):
-        win32api.keybd_event(vk_code, scan_code, win32con.KEYEVENTF_KEYUP, 0)
-        await asyncio.sleep(PRESS_GAP)  # 短暂延迟
+    need_wait = False
+    while is_key_pressed(vk_code):  # 等key占用结束
+        need_wait = True
+        await asyncio.sleep(0)
+    if need_wait:
+        await asyncio.sleep(PRESS_GAP)
     win32api.keybd_event(vk_code, scan_code, 0, 0)
     await asyncio.sleep(PRESS_GAP)  # 短暂延迟
     win32api.keybd_event(vk_code, scan_code, win32con.KEYEVENTF_KEYUP, 0)
