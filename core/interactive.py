@@ -128,7 +128,7 @@ def _start_():
                         break
 
                     try:
-                        play.melody_play(melody)
+                        play.play_melody_async(melody)
                     except Exception as e:
                         log(f"ERROR: 演奏出错: {str(e)}", style="bright_red", level="ERROR")
 
