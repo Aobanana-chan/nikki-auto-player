@@ -309,3 +309,23 @@ def melody_to_json_v2(file_path: str) -> bool:
 
     except Exception as e:
         logger.error(f"err: {str(e)}")
+
+
+def calc_beat_duration(delta_beat: float, bpm: float) -> float:
+    """
+    根据节拍差和BPM计算时间间隔
+    
+    参数:
+    delta_beat (float): 两个事件之间的节拍差值
+    bpm (float): 当前节拍速度（每分钟节拍数）
+    
+    返回:
+    float: 以秒为单位的时间间隔
+    """
+    # 计算每拍的时间（秒）
+    seconds_per_beat = 60.0 / bpm
+    
+    # 计算整个间隔的时间
+    time_interval = delta_beat * seconds_per_beat
+    
+    return time_interval

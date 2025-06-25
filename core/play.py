@@ -1,12 +1,12 @@
 import asyncio
-import time
 from typing import cast
 import pyautogui
+from core.melody import BPMNoteData, HoldNoteData, Melody, TapNoteData
 from utils import tools
 from loguru import logger
 from utils.logs import log
 from . import press_key as pk
-from core import config, Melody
+from core import config
 
 GLOBAL_BPM = config.global_bpm
 
@@ -31,96 +31,38 @@ async def play_hold_note(sleep_time: float, note: str, duration: float):
     await pk.hold_key(key, duration)
     log(f"Notes: {' '.join(note)}", style="cyan", level="DEBUG")
 
-async def melody_play(melody: Melody) -> None:
+async def melody_play(notes: list[BPMNoteData | TapNoteData | HoldNoteData]) -> None:
     '''
     播放旋律数据
     '''
     pyautogui.FAILSAFE = True
     log("Action: Playing melody...", level="INFO")
-    next_note_time = time.time()
-    cur_notes = []  # this section's notes
-    current_bpm = melody.bpm
-    current_timeSignature = "4/4"
+    current_bpm = GLOBAL_BPM
     note_play_task: list[asyncio.Task] = []
     time_offset = 0
+    bpm_start_beat = 0
 
     # 预处理旋律数据
-    pmelody = [tools.process_melody_note(note_tuple) for note_tuple in melody.melody]
+    # pmelody = [tools.process_melody_note(note_tuple) for note_tuple in melody.melody]
 
-    for i, (note, beat_value) in enumerate(pmelody):
-        # check if exit
-        # if pk.is_key_pressed(tools.get_vk_code(config.exit_key)):
-        #     log("演奏已中断", style="bright_yellow", level="INFO")
-        #     return
-
-        cur_time = time.time()
-        # if cur_time < next_note_time:
-        #     time.sleep(next_note_time - cur_time)
-
-        if note == 'bpm':
-            try:
-                current_bpm = float(beat_value)
-                log(f"BPM changed to: {current_bpm}", style="cyan", level="INFO")
-                continue
-            except (ValueError, TypeError):
-                log(f"Invalid BPM value: {beat_value}", style="red", level="ERROR")
-                continue
-
-        if note == "timeSig":
-            try:
-                current_timeSignature = beat_value
-                log(f"Time signature changed to: {current_timeSignature}", style="cyan", level="INFO")
-                continue
-            except Exception:
-                log(f"Invalid time signature value: {beat_value}", style="red", level="ERROR")
-                continue
-
-        # 遇到新的Section时，先输出之前收集的音符
-        if note == '@@':
-            if cur_notes:
-                log(f"Notes: {' '.join(cur_notes)}", style="yellow", level="DEBUG")
-                cur_notes = []
-
-            log(f"cur section {beat_value} (BPM: {current_bpm})", style="bright_blue", level="INFO")
-            continue
-
-        try:
-            # 使用当前BPM计算时值
-            duration = tools.calculate_duration(beat_value, current_bpm, current_timeSignature)
-
-            # 休止符
-            if str(note) == '0':
-                cur_notes.append('0')
-                # time.sleep(duration * 0.97)
-
-            else:
-                # try:
-                #     key = config.key_mapping[str(note)].lower()
-                #     cur_notes.append(str(note))
-                # except KeyError:
-                #     log(f"Unknown note: {note}, skipped.", style="yellow", level="WARNING")
-                #     continue
-
-                # 长按/短按
-                if duration >= config.hold_threshold:
-                    # pk.hold_key(key, duration)
-                    note_play_task.append(asyncio.create_task(play_hold_note(time_offset, str(note), duration)))
-                else:
-                    note_play_task.append(asyncio.create_task(play_single_note(time_offset, str(note))))
-                    # pk.press_key(key)
-                    # await asyncio.sleep(duration * 0.92)
-            time_offset += duration
-
-            next_note_time = cur_time + duration
-            # time.sleep(min(0.01, duration * 0.05))
-
-        except ValueError:
-            log(f"Invalid value: {beat_value}, Skipped", style="red", level="ERROR")
-            continue
-        except Exception as e:
-            log(f"Fault: {note} {beat_value}, Skipped", style="red", level="ERROR")
-            logger.error(f"err: {str(e)}")
-            continue
+    for note in notes:
+        match note["type"]:
+            case "bpm":
+                current_bpm = note["bpm"]
+                time_offset += tools.calc_beat_duration(note["beat"] - bpm_start_beat, current_bpm)
+                bpm_start_beat = note["beat"]
+                async def show_bpm_change_log(sleep_time: float):
+                    await asyncio.sleep(sleep_time)
+                    log(f"BPM changed to: {current_bpm}", style="cyan", level="INFO")
+                note_play_task.append(asyncio.create_task(show_bpm_change_log(time_offset)))
+            case "tap":
+                delta_time = tools.calc_beat_duration(note["beat"] - bpm_start_beat, current_bpm)
+                note_play_task.append(asyncio.create_task(play_single_note(delta_time + time_offset, note["note"])))
+            case "hold":
+                # 暂时不考虑hold过程中bpm改变的复杂情况
+                hold_time = tools.calc_beat_duration(note["end_beat"] - note["beat"], current_bpm)
+                start_delta_time = tools.calc_beat_duration(note["beat"] - bpm_start_beat, current_bpm)
+                note_play_task.append(asyncio.create_task(play_hold_note(start_delta_time + time_offset, note["note"], hold_time)))
 
     gather = asyncio.gather(*note_play_task)
     while True:
@@ -128,9 +70,10 @@ async def melody_play(melody: Melody) -> None:
             return
         if pk.is_key_pressed(tools.get_vk_code(config.exit_key)):
             log("演奏已中断", style="bright_yellow", level="INFO")
+            gather.cancel()
             return
         await asyncio.sleep(0)
 
 def play_melody_async(melody: Melody):
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(melody_play(melody))
+    loop.run_until_complete(melody_play(melody.melody))
