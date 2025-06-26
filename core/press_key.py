@@ -3,7 +3,7 @@ from encodings.punycode import T
 import win32api
 import win32con
 
-PRESS_GAP = 0.005
+PRESS_GAP = 0.016
 
 def is_key_pressed(key_code: int) -> bool:
     """

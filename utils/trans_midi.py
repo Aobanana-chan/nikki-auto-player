@@ -46,8 +46,8 @@ def midi_to_json(midi_file_path, output_json_path):
     threshold_ticks = ticks_per_beat // 64  # 1/64拍的ticks阈值
     
     # 音符过滤范围 - C4到B6
-    NOTE_MIN = 60   # C4
-    NOTE_MAX = 95   # B6
+    NOTE_MIN = 48   # C4
+    NOTE_MAX = 83   # B6
     
     # 存储结果事件
     events = []
@@ -194,7 +194,7 @@ def calculate_time_interval(delta_beat, bpm):
 # 使用示例
 if __name__ == "__main__":
     input_midi = "harukikake.mid"   # 输入MIDI文件路径
-    output_json = "harukikake.json" # 输出JSON文件路径
+    output_json = "score/harukikake.json" # 输出JSON文件路径
     
     # 转换MIDI文件
     events = midi_to_json(input_midi, output_json)
