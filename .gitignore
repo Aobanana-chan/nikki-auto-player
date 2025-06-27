@@ -5,3 +5,4 @@ logs/*.log
 .vs/*
 score/local/*
 trans/local/*
+.venv
