@@ -71,6 +71,7 @@ async def melody_play(notes: list[BPMNoteData | TapNoteData | HoldNoteData]) -> 
         if pk.is_key_pressed(tools.get_vk_code(config.exit_key)):
             log("演奏已中断", style="bright_yellow", level="INFO")
             gather.cancel()
+            pk.release_all_key()
             return
         await asyncio.sleep(0)
 
