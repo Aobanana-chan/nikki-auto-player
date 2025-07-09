@@ -36,7 +36,7 @@ async def hold_key(key: str, duration: float) -> None:
     await asyncio.sleep(max(duration, PRESS_GAP))  # 保证演奏的连贯性
     # 释放按键
     win32api.keybd_event(vk_code, scan_code, win32con.KEYEVENTF_KEYUP, 0)
-    await asyncio.sleep(PRESS_GAP)
+    await asyncio.sleep(0.016)
     KEY_OCCUPIED.discard(key)
 
 
@@ -56,7 +56,7 @@ async def press_key(key: str) -> None:
     win32api.keybd_event(vk_code, scan_code, 0, 0)
     await asyncio.sleep(PRESS_GAP)  # 短暂延迟
     win32api.keybd_event(vk_code, scan_code, win32con.KEYEVENTF_KEYUP, 0)
-    await asyncio.sleep(PRESS_GAP)
+    await asyncio.sleep(0.016)
     KEY_OCCUPIED.discard(key)
 
 def release_all_key():
