@@ -48,13 +48,13 @@ async def melody_play(notes: list[BPMNoteData | TapNoteData | HoldNoteData]) -> 
     for note in notes:
         match note["type"]:
             case "bpm":
-                current_bpm = note["bpm"]
                 time_offset += tools.calc_beat_duration(note["beat"] - bpm_start_beat, current_bpm)
+                current_bpm = note["bpm"]
                 bpm_start_beat = note["beat"]
-                async def show_bpm_change_log(sleep_time: float):
+                async def show_bpm_change_log(sleep_time: float, bpm: float):
                     await asyncio.sleep(sleep_time)
-                    log(f"BPM changed to: {current_bpm}", style="cyan", level="INFO")
-                note_play_task.append(asyncio.create_task(show_bpm_change_log(time_offset)))
+                    log(f"BPM changed to: {bpm}, time: {sleep_time}", style="cyan", level="INFO")
+                note_play_task.append(asyncio.create_task(show_bpm_change_log(time_offset, current_bpm)))
             case "tap":
                 delta_time = tools.calc_beat_duration(note["beat"] - bpm_start_beat, current_bpm)
                 note_play_task.append(asyncio.create_task(play_single_note(delta_time + time_offset, note["note"])))
